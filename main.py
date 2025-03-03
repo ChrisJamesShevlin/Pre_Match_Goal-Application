@@ -1,11 +1,10 @@
 import tkinter as tk
-from tkinter import ttk
 import math
 
-def zip_probability(lam, k, p_zero=0.06):
+def zip_probability(lam, k, p_zero=0.0):
     """
     Zero-inflated Poisson probability.
-    If k == 0, adds a base probability (p_zero) for a zero-goal outcome.
+    p_zero is set to 0.0 here to remove extra weighting for 0 goals.
     """
     if k == 0:
         return p_zero + (1 - p_zero) * math.exp(-lam)
@@ -35,15 +34,21 @@ def calculate_probabilities():
         live_over_odds  = float(entries["entry_live_over_odds"].get())
         
         # --- 2) Calculate raw expected goals for each team ---
+        # Increase or decrease the weighting if desired
         adjusted_home_goals = ((avg_goals_home_scored + home_xg_scored +
                                 avg_goals_away_conceded + away_xg_conceded) / 4)
-        adjusted_home_goals *= (1 - 0.05 * injuries_home)
-        adjusted_home_goals += form_home * 0.1 - position_home * 0.02
+        
+        # Reduced injury penalty from 5% to 3% per injury
+        adjusted_home_goals *= (1 - 0.03 * injuries_home)
+        
+        # Reduced position penalty from 0.02 to 0.01
+        adjusted_home_goals += form_home * 0.1 - position_home * 0.01
         
         adjusted_away_goals = ((avg_goals_away_scored + away_xg_scored +
                                 avg_goals_home_conceded + home_xg_conceded) / 4)
-        adjusted_away_goals *= (1 - 0.05 * injuries_away)
-        adjusted_away_goals += form_away * 0.1 - position_away * 0.02
+        
+        adjusted_away_goals *= (1 - 0.03 * injuries_away)
+        adjusted_away_goals += form_away * 0.1 - position_away * 0.01
         
         # --- 3) Model probabilities for Under & Over 2.5 using Poisson ---
         goal_range = 10
@@ -54,6 +59,7 @@ def calculate_probabilities():
                     prob_i = zip_probability(adjusted_home_goals, i)
                     prob_j = zip_probability(adjusted_away_goals, j)
                     under_prob_model += prob_i * prob_j
+        
         over_prob_model = 1 - under_prob_model
         
         # --- 4) Convert live odds to implied probabilities and normalize them ---
