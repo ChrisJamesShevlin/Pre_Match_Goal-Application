@@ -97,7 +97,7 @@ def reset_fields():
 
 # --- GUI Layout ---
 root = tk.Tk()
-root.title("Pre-Match Over/Under 2.5 Odds Calculator")
+root.title("Odds Apex Pre-Market")
 
 # Define input fields
 entries = {
