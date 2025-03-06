@@ -13,10 +13,12 @@ def zip_probability(lam, k, p_zero=0.0):
 def calculate_probabilities():
     try:
         # --- 1) Retrieve all inputs ---
+        # Updated order: Home Scored, Home Conceded, Away Scored, Away Conceded
         avg_goals_home_scored   = float(entries["entry_home_scored"].get())
-        avg_goals_away_conceded = float(entries["entry_away_conceded"].get())
-        avg_goals_away_scored   = float(entries["entry_away_scored"].get())
         avg_goals_home_conceded = float(entries["entry_home_conceded"].get())
+        avg_goals_away_scored   = float(entries["entry_away_scored"].get())
+        avg_goals_away_conceded = float(entries["entry_away_conceded"].get())
+        
         injuries_home           = int(entries["entry_injuries_home"].get())
         injuries_away           = int(entries["entry_injuries_away"].get())
         position_home           = int(entries["entry_position_home"].get())
@@ -34,19 +36,15 @@ def calculate_probabilities():
         live_over_odds  = float(entries["entry_live_over_odds"].get())
         
         # --- 2) Calculate raw expected goals for each team ---
-        # Increase or decrease the weighting if desired
+        # Home expected goals uses the home scoring stats and opponent's conceding stats.
         adjusted_home_goals = ((avg_goals_home_scored + home_xg_scored +
                                 avg_goals_away_conceded + away_xg_conceded) / 4)
-        
-        # Reduced injury penalty from 5% to 3% per injury
         adjusted_home_goals *= (1 - 0.03 * injuries_home)
-        
-        # Reduced position penalty from 0.02 to 0.01
         adjusted_home_goals += form_home * 0.1 - position_home * 0.01
         
+        # Away expected goals uses the away scoring stats and opponent's conceding stats.
         adjusted_away_goals = ((avg_goals_away_scored + away_xg_scored +
                                 avg_goals_home_conceded + home_xg_conceded) / 4)
-        
         adjusted_away_goals *= (1 - 0.03 * injuries_away)
         adjusted_away_goals += form_away * 0.1 - position_away * 0.01
         
@@ -59,7 +57,6 @@ def calculate_probabilities():
                     prob_i = zip_probability(adjusted_home_goals, i)
                     prob_j = zip_probability(adjusted_away_goals, j)
                     under_prob_model += prob_i * prob_j
-        
         over_prob_model = 1 - under_prob_model
         
         # --- 4) Convert live odds to implied probabilities and normalize them ---
@@ -72,7 +69,6 @@ def calculate_probabilities():
             live_over_prob  /= sum_live_probs
         
         # --- 5) Blend the model's probabilities with the live probabilities ---
-        # e.g. 70% model, 30% market
         blend_factor = 0.3  # 30% from market, 70% from model
         final_under_prob = under_prob_model * (1 - blend_factor) + live_under_prob * blend_factor
         final_over_prob  = over_prob_model  * (1 - blend_factor) + live_over_prob  * blend_factor
@@ -105,12 +101,12 @@ def reset_fields():
 root = tk.Tk()
 root.title("Odds Apex Pre-Market")
 
-# Define input fields
+# Updated order of entries: Home Scored, Home Conceded, Away Scored, Away Conceded, then the rest.
 entries = {
     "entry_home_scored":      tk.Entry(root),
-    "entry_away_conceded":    tk.Entry(root),
-    "entry_away_scored":      tk.Entry(root),
     "entry_home_conceded":    tk.Entry(root),
+    "entry_away_scored":      tk.Entry(root),
+    "entry_away_conceded":    tk.Entry(root),
     "entry_injuries_home":    tk.Entry(root),
     "entry_injuries_away":    tk.Entry(root),
     "entry_position_home":    tk.Entry(root),
@@ -126,9 +122,9 @@ entries = {
 }
 
 labels_text = [
-    "Avg Goals Home Scored", "Avg Goals Away Conceded", "Avg Goals Away Scored",
-    "Avg Goals Home Conceded", "Injuries Home", "Injuries Away", "Position Home",
-    "Position Away", "Form Home", "Form Away", "Home xG Scored", "Away xG Scored",
+    "Avg Goals Home Scored", "Avg Goals Home Conceded", "Avg Goals Away Scored", "Avg Goals Away Conceded",
+    "Injuries Home", "Injuries Away", "Position Home", "Position Away",
+    "Form Home", "Form Away", "Home xG Scored", "Away xG Scored",
     "Home xG Conceded", "Away xG Conceded", "Live Under 2.5 Odds", "Live Over 2.5 Odds"
 ]
 
